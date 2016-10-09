@@ -9,6 +9,7 @@ import numpy
 import itertools
 import argparse
 import random
+import pandas as pd
 
 import pdb
 
@@ -49,7 +50,9 @@ def parse_args():
         
 
 def new_deck(N):
-    # returns a full shuffled deck
+    """
+    Function to aggregate N decks into one shuffled deck
+    """
     DECK = []
     DECK.append(['J']*(4*N))
     DECK.append(['Q']*(4*N))
@@ -60,6 +63,25 @@ def new_deck(N):
     random.shuffle(DECK)
     return DECK
 
+
+def query_bet():
+    """
+    Queries user for the amount of $ to bet
+    """
+    valid_bet = 0
+    while (valid_bet == 0):
+        bet = input('Place bet ($' + str(player_cash) + ' available): ')
+        try:
+            bet = int(bet)
+            if (bet > player_cash):
+                print('Bet cannot exceed $' + str(player_cash))
+            elif (bet < 1):
+                print('Bet must be at last $1')
+            else:
+                valid_bet = 1
+        except ValueError:
+            print('Bet must be an integer')
+    return bet
 
 
 def compute_prob(CARDS):
@@ -90,43 +112,44 @@ def deal(deck, cards, numPlayers):
 if __name__ == "__main__":
     
     # parse arguments
-    arg_dict = parse_args()   
+    # arg_dict = parse_args()   
     
-    playerName = input('Enter your name: ')
+    # prompt user for info
+    # player_name = input('Enter your name: ')
+    player_names = 'Ronny'
+    num_players = 5
+    num_decks = 8
+    player_cash = 2500
     
-    # initialize deck 
-    DECK = new_deck(arg_dict['NUM_DECKS'])
-    playerCash = arg_dict['NUM_CREDITS']
+    # initialize deck
+    DECK = new_deck(num_decks)
+    
+    # initialize pandas data frame for players
+    
+    PLAYERS = pd.DataFrame()
 
-    # number of each card type  
-    N = arg_dict['NUM_DECKS']
-    CARDS = {'H':12*N, '1':4*N, '2':4*N, '3':4*N, '4':4*N, '5':4*N, '6':4*N, 
-            '7':4*N, '8':4*N, '9':4*N, '10':4*N}
-    
     # start game
-    playFlag = 1
-    state = {'Dealer':[], playerName:[]}
-    
-    while playFlag:
+    play = 1
+
+    while play:
         
         # query player for bet
-        validBet = 0
-        while (validBet == 0):
-            bet = int(input('Place bet ($' + str(playerCash) + ' available): '))
-            if (bet > playerCash):
-                print('Bet cannot exceed $' + str(playerCash))
-            elif (bet < 1):
-                print('Bet must be at last $1')
-            else:
-                validBet = 1
-        
+        bet = query_bet()
+  
         # deal cards
         
-                
+        pdb.set_trace()         
         
-        action = input('Type H for hit, S for stand: ')
+        action = input('Type H to hit, S to stand, Q to quit: ')
     
-    
+        if action == 'H':
+            break
+        elif action == 'S':
+            break
+        elif action == 'Q':
+            play = 0
+        else:
+            break
     
     
     
