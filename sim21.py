@@ -5,7 +5,7 @@ Created on Sun Jul 31 19:57:40 2016
 @author: rli
 """
 
-import numpy
+import numpy as np
 import random
 import math
 import pandas as pd
@@ -21,9 +21,10 @@ possible_actions = ['H','St','Sp','D']
 
 def init_game(num_decks, player_name, player_cash, num_players):
     """
-    Function to initialize the game by creating a shuffled GAME_DECK and data frame for all players
+    Function to initialize the game by creating a shuffled GAME_DECK and data frame for all players.
+    Global variables GAME_DECK and DISCARD_DECK will be modified.
         Args: # of GAME_DECKs, name of current player, total # of players
-        Returns: GAME_DECK (list of cards in random order), PLAYERS (pandas data frame)
+        Returns: PLAYERS (pandas data frame)
     """
     # aggregate all GAME_DECKs into one shuffled GAME_DECK
     global GAME_DECK
@@ -81,8 +82,8 @@ def query_action():
             query_action = 0
         else:
             print('Invalid choice - try again')
-    return action
-    
+    return action      
+
 
 def deal_card(PLAYERS, p, show_card):
     """
@@ -133,14 +134,13 @@ def calc_scores(PLAYERS):
     
 
 def sim_round(PLAYERS, player_name, player_bet):
-    
+        
     player_list = PLAYERS.index.tolist()
     
     # deal first card to each player
     for p in player_list:
         PLAYERS, hidden_card = deal_card(PLAYERS, p, 0)
-    
-    pdb.set_trace()
+
     # deal second card to each player
     for p in player_list:
         if p is 'Dealer':
@@ -149,6 +149,8 @@ def sim_round(PLAYERS, player_name, player_bet):
         else:
             PLAYERS, = deal_card(PLAYERS, p, 0)
         
+    pdb.set_trace()
+    
     # update scores
     PLAYERS = calc_scores(PLAYERS)
     
@@ -185,7 +187,6 @@ def compute_prob():
     
     pdb.set_trace()
     return 0
-
 
 
 
