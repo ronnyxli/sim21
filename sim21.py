@@ -10,6 +10,7 @@ import math
 import random
 import pandas as pd
 import cardCounter as cc
+import blackJackSimulator as bjs
 
 import pdb
 
@@ -130,6 +131,8 @@ def query_action():
 
 
 if __name__ == "__main__":
+    
+    init_game
     
     sim_params = query_params()
     
