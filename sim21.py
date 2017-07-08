@@ -162,8 +162,6 @@ if __name__ == "__main__":
         # display current state
         print(PLAYERS)
         
-        pdb.set_trace()
-        
         # query actions
         user_action = query_action()
             
