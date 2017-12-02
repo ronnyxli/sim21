@@ -28,4 +28,7 @@ class Deck(object):
 
     def deal(self):
         card = self.cards.pop(0)
+        # TODO: update state
         return card
+
+    # methods to compute state, probability matrix, etc.

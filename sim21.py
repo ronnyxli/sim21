@@ -13,11 +13,42 @@ import pandas as pd
 
 import pdb
 
-# Global variables
-actions = ['H','St','Sp','D'] # hit, stand, split, double
+
+def init_game():
+    '''
+    Set simulation parameters
+        Returns: Shuffled self.deck as list, game GAME as dataframe
+    '''
+    params = {}
+
+    # query user for inputs
+    # params['player_name'] = input('What is your name? ')
+    # params['min_bet'] = int(input('What is the minimum bet at this table? (10-100) '))
+    # params['num_decks'] = int(input('How many self.decks are used? (1-8) '))
+    # params['num_players'] = int(input('How many other players at the table? (0-4) ')) + 1
+    # params['player_cash'] = int(input('How much cash are you throwing down? (100-2500) '))
+
+    # dev mode
+    params['player_name'] = 'Ronny'
+    params['min_bet'] = 25
+    params['num_decks'] = 2
+    params['num_players'] = 1
+    params['player_cash'] = 400
+
+    return params
 
 
-def query_bet(self, player_cash, min_bet):
+def display(player_list):
+    '''
+    Prints all player cash and hands
+    '''
+    print('\n')
+    for p in player_list:
+        print(p.name + ' ($' + str(p.cash) + '): ' + p.showHand())
+    print('\n')
+
+
+def query_bet(player_cash, min_bet):
     '''
     Queries the user for a bet and checks that it is valid
     '''
@@ -37,40 +68,15 @@ def query_bet(self, player_cash, min_bet):
     return bet
 
 
-def query_action(self, game, deck, player):
+def query_action():
     '''
     Queries user for one of the possible actions
     '''
     query_action = True
     while query_action:
         user_action = input('Type H to hit, St to stay, Sp to split, D to double down: ')
-        if user_action == 'H':
-            game = deal(game, player, deck.pop(0))
-            print(game)
-        elif user_action == 'St':
-            query_action = False
-        elif user_action == 'Sp':
-            pdb.set_trace()
-        elif user_action == 'D':
-            pdb.set_trace()
-        else:
+        if user_action not in ['H','St','Sp','D','exit']:
             print('Invalid choice - try again')
-    return game
-
-
-def deal(self, game, player, card_drawn):
-    '''
-    Deals one card to the specified player
-        Returns: updated GAME dataframe
-    '''
-    # TODO: call cardCounter functions to update deck state whenever a card is drawn
-
-    if game.loc[player,'Hand'] == 0:
-        game.loc[player,'Hand'] = [str(card_drawn)]
-    else:
-        # TODO: encrypt dealer's
-        game.loc[player,'Hand'].append(str(card_drawn))
-
-    # pdb.set_trace()
-
-    return game
+        else:
+            query_action = False
+    return user_action
