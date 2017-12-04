@@ -6,89 +6,146 @@ Created on Mon Jul 31 10:40:05 2017
 @author: ronnyli
 """
 
-import numpy as np
-import pandas as pd
-import random
-
 import sim21 as sim
-import cardCounter as cc
+import deckManager
 
 import pdb
 
 
-def init_game():
+class Player(object):
     '''
-    Set simulation parameters
-        Returns: Shuffled deck as list, game GAME as dataframe
+    Class object describing each player (incl dealer)
     '''
-    # query user for inputs
-    # player_name = input('What is your name? ')
-    # min_bet = int(input('What is the minimum bet at this table? (10-100) '))
-    # num_decks = int(input('How many decks are used? (1-8) '))
-    # num_players = int(input('How many other players at the table? (0-4) '))
-    # player_cash = int(input('How much cash are you throwing down? (100-2500) '))
 
-    # dev mode
-    player_name = 'Ronny'
-    min_bet = 25
-    num_decks = 2
-    num_players = 2
-    player_cash = 400
+    def __init__(self, name, cash):
+        self.name = name
+        self.cash = cash
+        self.curr_bet = 0
+        self.hand = [] # list of cards in player's hand
 
-    # create DECK deck as list
-    DECK = []
-    for card in ['J','Q','K','A']:
-        DECK = DECK + [card]*(4*num_decks)
-    for n in range(2,11):
-        DECK = DECK + [n]*(4*num_decks)
-    random.shuffle(DECK)
+    def reset(self):
+        self.hand = []
 
-    # create dataframe for current GAME
-    columns = ['Hand', 'Score', 'Cash'] # list of columns
-    index = [player_name] # list of indexes
-    for p in range(0,num_players):
-        index.append('Player ' + str(p+2))
-    index.append('Dealer')
-    GAME = pd.DataFrame(index=index, columns=columns)
-    GAME = GAME.fillna(0) # fill with 0's instead of nan's
-    GAME.loc["Dealer" , "Cash"] = 'Inf'
-    GAME.loc[0:-1, "Cash"] = player_cash
+    def score(self):
+        '''
+        Calculate score of hand
+        '''
+        points = 0
+        if len(self.hand) > 0:
+            for card in self.hand:
+                if card in ['J','Q','K']:
+                    points = points + 10
+                elif card == 'A':
+                    points = points + 11
+                else:
+                    points = points + int(card)
+        if 'A' in self.hand:
+            if points > 21:
+                points = points - 10
+        return points
 
-    return GAME, DECK, min_bet, player_name
+    def showHand(self, flag):
+        if (self.name == 'DEALER') & (flag == 0):
+            return [self.hand[0], '?']
+        else:
+            return self.hand
+
+    def simAction(self):
+        '''
+        Simulates by-the-book decision for dealer and other players
+        '''
+        if self.score() < 17:
+            action = 'H'
+        else:
+            action = 'St'
+        return action
 
 
 
 if __name__ == "__main__":
 
-    # gather user inputs and initalize DECK
-    GAME, DECK, min_bet, player_name = init_game()
-    # TODO: class for GAME?
+    # gather user inputs
+    params = sim.init_game()
+
+    # create instance of Deck class (described in deckManager.py)
+    GameDeck = deckManager.Deck(params['numDecks'])
+
+    # create list of Player instances
+    Players = [Player(params['playerName'], params['playerCash'])]
+    for n in range(0,params['numPlayers']-1):
+        Players.append(Player('Player' + str(n+1), params['playerCash']))
+    Players.append(Player('DEALER', 0))
 
     play = True
     while play:
 
         # clear all hands
-        for player in GAME.index:
-            GAME.loc[player,'Hand'] = 0
+        for p in Players:
+            p.reset()
+            p.curr_bet = params['minBet']
 
         # prompt user for bet
-        bet = sim.query_bet(GAME.iloc[0,2], min_bet)
-        if bet == 0:
+        bet = sim.query_bet(Players[0].cash, params['minBet'])
+        if bet == 'leave':
             break
+        else:
+            Players[0].curr_bet = bet
 
-        # loop all rows and deal 2 cards
+        # initial deal: loop all rows and deal 2 cards to each player
         for n in range(0,2):
-            for player in GAME.index:
-                GAME = sim.deal(GAME, player, DECK.pop(0))
-                # if (n == 1) and (player == 'Dealer'):
-                    # TODO: conceal dealer's second card
+            for p in Players:
+                p.hand.append(GameDeck.deal())
 
-        print(GAME)
+        # display initial hands
+        sim.display_cards(Players, 0)
 
-        GAME = sim.query_action(GAME, DECK, player_name)
+        user_action = sim.query_action()
+        while user_action in ['H','Sp']:
+            if user_action == 'H':
+                Players[0].hand.append(GameDeck.deal())
+            else:
+                # split into two hands
+                self.curr_bet = self.curr_bet*2
+            sim.display_cards(Players, 0)
+            user_action = sim.query_action()
 
-        # TODO: play out hands for other players and dealer
+        if user_action == 'D':
+            # double bet and give user one more card
+            self.curr_bet = self.curr_bet*2
+            Players[0].hand.append(GameDeck.deal())
+            sim.display_cards(Players, 0)
 
-        GAME = sim.calc_scores(GAME, player_name)
+        # simulate decisions for dealer and other players
+        for p in Players[1:]:
+            player_action = p.simAction()
+            while player_action in ['H','Sp']:
+                p.hand.append(GameDeck.deal())
+                player_action = p.simAction()
 
-        print(GAME)
+        # TODO: calculate results and deduct win/loss
+        for p in Players[0:-1]:
+            if p.score() > 21:
+                # player busts
+                p.cash = p.cash - p.curr_bet
+            else:
+                if (Players[-1].score() > 21):
+                    # dealer busts but player doesn't
+                    p.cash = p.cash + p.curr_bet
+                else:
+                    if (p.score() > Players[-1].score()):
+                        # both player and dealer don't bust but player has higher score
+                        p.cash = p.cash + p.curr_bet
+                    elif (p.score() < Players[-1].score()):
+                        # both player and dealer don't bust but dealer has higher score
+                        p.cash = p.cash - p.curr_bet
+
+        # print round summary
+        sim.display_cards(Players, 1)
+
+        '''
+        if results[0] == 'W':
+            print('You won $' + str(Players[0].curr_bet))
+            print('You have $' + )
+        '''
+
+        pdb.set_trace()

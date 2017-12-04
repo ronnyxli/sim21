@@ -22,29 +22,27 @@ def init_game():
     params = {}
 
     # query user for inputs
-    # params['player_name'] = input('What is your name? ')
-    # params['min_bet'] = int(input('What is the minimum bet at this table? (10-100) '))
-    # params['num_decks'] = int(input('How many self.decks are used? (1-8) '))
-    # params['num_players'] = int(input('How many other players at the table? (0-4) ')) + 1
-    # params['player_cash'] = int(input('How much cash are you throwing down? (100-2500) '))
+    # params['playerName'] = input('What is your name? ')
+    # params['minBet'] = int(input('What is the minimum bet at this table? (10-100) '))
+    # params['numDecks'] = int(input('How many self.decks are used? (1-8) '))
+    # params['numPlayers'] = int(input('How many other players at the table? (0-4) ')) + 1
+    # params['playerCash'] = int(input('How much cash are you throwing down? (100-2500) '))
 
     # dev mode
-    params['player_name'] = 'Ronny'
-    params['min_bet'] = 25
-    params['num_decks'] = 2
-    params['num_players'] = 1
-    params['player_cash'] = 400
+    params = {'playerName':'Ronny', 'minBet':25,
+                'numDecks':2, 'numPlayers':1, 'playerCash':400}
 
     return params
 
 
-def display(player_list):
+def display_cards(player_list, flag):
     '''
     Prints all player cash and hands
+        Args: List of Player class instance
     '''
     print('\n')
     for p in player_list:
-        print(p.name + ' ($' + str(p.cash) + '): ' + p.showHand())
+        print(p.name + ' ($' + str(p.cash) + '): ' + str(p.showHand(flag)))
     print('\n')
 
 
@@ -54,7 +52,7 @@ def query_bet(player_cash, min_bet):
     '''
     valid_bet = False
     while not valid_bet:
-        bet = input('Place bet ($' + str(player_cash) + ' available): ')
+        bet = input('Specify bet ($' + str(player_cash) + ' available) or type "leave": ')
         try:
             bet = int(bet)
             if (bet > player_cash):
@@ -75,8 +73,13 @@ def query_action():
     query_action = True
     while query_action:
         user_action = input('Type H to hit, St to stay, Sp to split, D to double down: ')
-        if user_action not in ['H','St','Sp','D','exit']:
+        if user_action in ['leave', 'exit', 'stop', 'quit']:
+            print("You can't fucking leave in the middle of a round, asshole.")
+        elif user_action not in ['H','St','Sp','D']:
             print('Invalid choice - try again')
         else:
             query_action = False
     return user_action
+
+
+# def calc_results(player_list):
