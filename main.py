@@ -39,13 +39,12 @@ class Player(object):
                     points = points + 11
                 else:
                     points = points + int(card)
-        if 'A' in self.hand:
-            if points > 21:
-                points = points - 10
+        if ('A' in self.hand) & points > 21:
+            points = points - 10
         return points
 
     def showHand(self, flag):
-        if (self.name == 'DEALER') & (flag == 0):
+        if (self.name == 'DEALER') & (not flag):
             return [self.hand[0], '?']
         else:
             return self.hand
@@ -86,7 +85,7 @@ if __name__ == "__main__":
 
         # prompt user for bet
         bet = sim.query_bet(Players[0].cash, params['minBet'])
-        if bet == 'leave':
+        if bet == 0:
             break
         else:
             Players[0].curr_bet = bet
@@ -97,50 +96,39 @@ if __name__ == "__main__":
                 p.hand.append(GameDeck.deal())
 
         # display initial hands
-        sim.display_cards(Players, 0)
+        sim.display_cards(Players, False)
 
+        # handle user actions
         user_action = sim.query_action()
-        while user_action in ['H','Sp']:
-            if user_action == 'H':
-                Players[0].hand.append(GameDeck.deal())
-            else:
-                # split into two hands
-                self.curr_bet = self.curr_bet*2
-            sim.display_cards(Players, 0)
-            user_action = sim.query_action()
-
         if user_action == 'D':
             # double bet and give user one more card
-            self.curr_bet = self.curr_bet*2
+            Players[0].curr_bet = Players[0].curr_bet*2
             Players[0].hand.append(GameDeck.deal())
             sim.display_cards(Players, 0)
+        elif user_action == 'Sp':
+            # TODO: handle split
+            Players[0] = sim.handle_split(Players[0])
+        else:
+            while user_action == 'H':
+                Players[0].hand.append(GameDeck.deal())
+                sim.display_cards(Players, 0)
+                if (Players[0].score()) > 21:
+                    print('BUST')
+                    break
+                else:
+                    user_action = sim.query_action()
 
         # simulate decisions for dealer and other players
         for p in Players[1:]:
             player_action = p.simAction()
-            while player_action in ['H','Sp']:
+            while player_action == 'H':
                 p.hand.append(GameDeck.deal())
                 player_action = p.simAction()
 
-        # TODO: calculate results and deduct win/loss
-        for p in Players[0:-1]:
-            if p.score() > 21:
-                # player busts
-                p.cash = p.cash - p.curr_bet
-            else:
-                if (Players[-1].score() > 21):
-                    # dealer busts but player doesn't
-                    p.cash = p.cash + p.curr_bet
-                else:
-                    if (p.score() > Players[-1].score()):
-                        # both player and dealer don't bust but player has higher score
-                        p.cash = p.cash + p.curr_bet
-                    elif (p.score() < Players[-1].score()):
-                        # both player and dealer don't bust but dealer has higher score
-                        p.cash = p.cash - p.curr_bet
+        sim.calc_results(Players)
 
         # print round summary
-        sim.display_cards(Players, 1)
+        sim.display_cards(Players, True)
 
         '''
         if results[0] == 'W':
@@ -149,3 +137,5 @@ if __name__ == "__main__":
         '''
 
         pdb.set_trace()
+
+    # print game summary
