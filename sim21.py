@@ -35,6 +35,24 @@ def init_game():
     return params
 
 
+def score(x):
+    '''
+    Returns
+    '''
+    points = 0
+    if len(x) > 0:
+        for card in x:
+            if card in ['J','Q','K']:
+                points = points + 10
+            elif card == 'A':
+                points = points + 11
+            else:
+                points = points + int(card)
+    if ('A' in x) & (points > 21):
+        points = points - 10
+    return points
+
+
 def display_cards(player_list, flag):
     '''
     Prints all player cash and hands
@@ -42,12 +60,17 @@ def display_cards(player_list, flag):
     '''
     print('\n')
     for p in player_list:
-        if (p.name == 'DEALER') & (not flag):
-            print( p.name + ' ($' + str(p.cash) + '): ' + \
-                    str(p.showHand(flag)) )
-        else:
-            print( p.name + ' ($' + str(p.cash) + '): ' + \
-                    str(p.showHand(flag)) + ' (' + str(p.score()) + ')' )
+        hands_str = p.name + ' ($' + str(p.cash) + '): ' + '| '
+        # loop all hands
+        for hand in p.hands:
+            if (p.name == 'DEALER') & (not flag):
+                hands_str = hands_str + str(hand[0]) + ' ? '
+            else:
+                for card in hand:
+                    hands_str = hands_str + str(card) + ' '
+                hands_str = hands_str + '(' + str(score(hand)) + ') '
+            hands_str = hands_str + '| '
+        print(hands_str)
     print('\n')
 
 
@@ -57,7 +80,9 @@ def query_bet(player_cash, min_bet):
     '''
     valid_bet = False
     while not valid_bet:
-        bet = input('Specify bet ($' + str(player_cash) + ' available) or type 0 to leave: ')
+        bet = input('Specify bet ($' + str(player_cash) + \
+                ' available, ' + '$' + str(min_bet) + ' minimum) ' + \
+                'or type 0 to leave: ')
         try:
             bet = int(bet)
             if (bet > player_cash):
@@ -87,35 +112,30 @@ def query_action():
     return user_action
 
 
-def handle_split(P):
-    '''
-    Split into two hands and query each until player stays
-        Args: Player class instance
-        Returns: Updated Player class instance
-    '''
-    P.curr_bet = P.curr_bet*2
-    for card in P.hand:
-        print(card)
-    return P
-
-
 def calc_results(player_list):
     '''
     Calculate results and deduct win/loss
     '''
-    dealer_score = player_list[-1].score()
+    result = ''
+    dealer_score = score(player_list[-1].hands[0])
     for p in player_list[0:-1]:
-        if p.score() > 21:
-            # player busts
-            p.cash = p.cash - p.curr_bet
-        else:
-            if (dealer_score > 21):
-                # dealer busts but player doesn't
-                p.cash = p.cash + p.curr_bet
+        for hand in p.hands:
+            if score(hand) > 21:
+                # player busts
+                p.cash = p.cash - p.curr_bet
+                result = 'Bust - Lost $' + str(p.curr_bet)
             else:
-                if (p.score() > dealer_score):
-                    # both player and dealer don't bust but player has higher score
+                if (dealer_score > 21):
+                    # dealer busts but player doesn't
                     p.cash = p.cash + p.curr_bet
-                elif (p.score() < dealer_score):
-                    # both player and dealer don't bust but dealer has higher score
-                    p.cash = p.cash - p.curr_bet
+                    result = 'Won $' + str(p.curr_bet)
+                else:
+                    if (score(hand) > dealer_score):
+                        # both player and dealer don't bust but player has higher score
+                        p.cash = p.cash + p.curr_bet
+                        result = 'Won $' + str(p.curr_bet)
+                    elif (score(hand) < dealer_score):
+                        # both player and dealer don't bust but dealer has higher score
+                        p.cash = p.cash - p.curr_bet
+                        result = 'Lost $' + str(p.curr_bet)
+    return result

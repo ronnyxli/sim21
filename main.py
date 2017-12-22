@@ -6,6 +6,8 @@ Created on Mon Jul 31 10:40:05 2017
 @author: ronnyli
 """
 
+import numpy as np
+
 import sim21 as sim
 import deckManager
 
@@ -21,39 +23,41 @@ class Player(object):
         self.name = name
         self.cash = cash
         self.curr_bet = 0
-        self.hand = [] # list of cards in player's hand
+        self.hands = [] # list of hands (each hand is a list of cards)
 
     def reset(self):
-        self.hand = []
+        self.hands = []
 
-    def score(self):
-        '''
-        Calculate score of hand
-        '''
-        points = 0
-        if len(self.hand) > 0:
-            for card in self.hand:
-                if card in ['J','Q','K']:
-                    points = points + 10
-                elif card == 'A':
-                    points = points + 11
-                else:
-                    points = points + int(card)
-        if ('A' in self.hand) & points > 21:
-            points = points - 10
-        return points
-
-    def showHand(self, flag):
-        if (self.name == 'DEALER') & (not flag):
-            return [self.hand[0], '?']
+    def addCard(self, new_card, hand_num):
+        if not self.hands:
+            self.hands.append([new_card])
         else:
-            return self.hand
+            self.hands[hand_num].append(new_card)
 
-    def simAction(self):
+    def split(self, hand_num):
+        '''
+        Creates two hands out of the cards in the hand specified by idx
+        '''
+        if hand_num < len(self.hands):
+            if len(self.hands[hand_num]) == 2:
+                card1 = self.hands[hand_num][0]
+                card2 = self.hands[hand_num][1]
+                if card1 == card2:
+                    del self.hands[hand_num]
+                    self.hands.append([card1])
+                    self.hands.append([card2])
+                else:
+                    print('You may only split two of the same card')
+            else:
+                print('Must have two cards in the hand to split')
+        else:
+            print('Hand does not exist')
+
+    def simAction(self, hand_num):
         '''
         Simulates by-the-book decision for dealer and other players
         '''
-        if self.score() < 17:
+        if sim.score(self.hands[hand_num]) < 17:
             action = 'H'
         else:
             action = 'St'
@@ -78,7 +82,7 @@ if __name__ == "__main__":
     play = True
     while play:
 
-        # clear all hands
+        # restart
         for p in Players:
             p.reset()
             p.curr_bet = params['minBet']
@@ -93,49 +97,50 @@ if __name__ == "__main__":
         # initial deal: loop all rows and deal 2 cards to each player
         for n in range(0,2):
             for p in Players:
-                p.hand.append(GameDeck.deal())
+                p.addCard(GameDeck.deal(), 0)
 
         # display initial hands
         sim.display_cards(Players, False)
 
-        # handle user actions
-        user_action = sim.query_action()
-        if user_action == 'D':
-            # double bet and give user one more card
-            Players[0].curr_bet = Players[0].curr_bet*2
-            Players[0].hand.append(GameDeck.deal())
-            sim.display_cards(Players, 0)
-        elif user_action == 'Sp':
-            # TODO: handle split
-            Players[0] = sim.handle_split(Players[0])
-        else:
-            while user_action == 'H':
-                Players[0].hand.append(GameDeck.deal())
-                sim.display_cards(Players, 0)
-                if (Players[0].score()) > 21:
-                    print('BUST')
-                    break
-                else:
-                    user_action = sim.query_action()
+        # handle user action on each hands
+        for idx in range(0,len(Players[0].hands)):
+            print('On hand ' + str(idx+1))
+            user_action = sim.query_action()
+            if user_action == 'D':
+                # double bet and give user one more card
+                Players[0].curr_bet = Players[0].curr_bet*2
+                Players[0].addCard(GameDeck.deal(), hand_num)
+            elif user_action == 'Sp':
+                Players[0].split(idx)
+                pdb.set_trace()
+            else:
+                while user_action == 'H':
+                    Players[0].addCard(GameDeck.deal(), idx)
+                    sim.display_cards(Players, False)
+                    if (sim.score(Players[0].hands[idx]) > 21):
+                        break
+                    else:
+                        user_action = sim.query_action()
 
         # simulate decisions for dealer and other players
         for p in Players[1:]:
-            player_action = p.simAction()
-            while player_action == 'H':
-                p.hand.append(GameDeck.deal())
-                player_action = p.simAction()
+            for idx in range(0,len(p.hands)):
+                while (p.simAction(idx) == 'H'):
+                    p.addCard(GameDeck.deal(), idx)
 
-        sim.calc_results(Players)
+        result = sim.calc_results(Players)
 
         # print round summary
         sim.display_cards(Players, True)
+
+        print(result + '\n')
+
+        pdb.set_trace()
 
         '''
         if results[0] == 'W':
             print('You won $' + str(Players[0].curr_bet))
             print('You have $' + )
         '''
-
-        pdb.set_trace()
 
     # print game summary
