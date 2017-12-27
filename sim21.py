@@ -37,19 +37,24 @@ def init_game():
 
 def score(x):
     '''
-    Returns
+    Args: List of cards
+    Returns: Optimized score of cards
     '''
     points = 0
+    num_aces = 0
     if len(x) > 0:
         for card in x:
             if card in ['J','Q','K']:
                 points = points + 10
             elif card == 'A':
-                points = points + 11
+                num_aces = num_aces + 1
             else:
                 points = points + int(card)
-    if ('A' in x) & (points > 21):
-        points = points - 10
+    for n in range(0,num_aces):
+        if (points + 11) > 21:
+            point = points + 1
+        else:
+            points = points + 11
     return points
 
 
@@ -64,11 +69,12 @@ def display_cards(player_list, flag):
         # loop all hands
         for hand in p.hands:
             if (p.name == 'DEALER') & (not flag):
-                hands_str = hands_str + str(hand[0]) + ' ? '
+                # second card dealt face-down
+                hands_str = hands_str + str(hand['cards'][0]) + ' ? '
             else:
-                for card in hand:
+                for card in hand['cards']:
                     hands_str = hands_str + str(card) + ' '
-                hands_str = hands_str + '(' + str(score(hand)) + ') '
+                hands_str = hands_str + '(' + str(score(hand['cards'])) + ') '
             hands_str = hands_str + '| '
         print(hands_str)
     print('\n')
@@ -112,30 +118,50 @@ def query_action():
     return user_action
 
 
-def calc_results(player_list):
+def simAction(cards):
+    '''
+    Simulates by-the-book decision for cards in the hand
+    '''
+    if score(cards) < 17:
+        action = 'H'
+    else:
+        action = 'St'
+    return action
+
+
+def calc_results(player, dealer_score):
     '''
     Calculate results and deduct win/loss
     '''
     result = ''
-    dealer_score = score(player_list[-1].hands[0])
-    for p in player_list[0:-1]:
-        for hand in p.hands:
-            if score(hand) > 21:
-                # player busts
-                p.cash = p.cash - p.curr_bet
-                result = 'Bust - Lost $' + str(p.curr_bet)
+    for handIdx in p.hands:
+        cards = hand[handIdx]['cards']
+        bet = hand[handIdx]['bet']
+        if score(cards) > 21:
+            # player busts
+            if dealer_score > 21:
+                # dealer also busts
+                result = 'Bump ' + 'on hand ' + str(handIdx)
             else:
-                if (dealer_score > 21):
-                    # dealer busts but player doesn't
+                # dealer doesn't bust
+                p.cash = p.cash - bet
+                result = 'You lost $' + str(bet) + 'on hand ' + str(handIdx)
+        else:
+            if dealer_score > 21:
+                # dealer busts but player doesn't
+                p.cash = p.cash + bet
+                result = 'You won $' + str(bet) + 'on hand ' + str(handIdx)
+            else:
+                # both player and dealer don't bust
+                if (score(cards) > dealer_score):
+                    # player has higher score
                     p.cash = p.cash + p.curr_bet
-                    result = 'Won $' + str(p.curr_bet)
+                    result = 'You won $' + str(bet) + 'on hand ' + str(handIdx)
+                elif (score(cards) < dealer_score):
+                    # dealer has higher score
+                    p.cash = p.cash - p.curr_bet
+                    result = 'You lost $' + str(bet) + 'on hand ' + str(handIdx)
                 else:
-                    if (score(hand) > dealer_score):
-                        # both player and dealer don't bust but player has higher score
-                        p.cash = p.cash + p.curr_bet
-                        result = 'Won $' + str(p.curr_bet)
-                    elif (score(hand) < dealer_score):
-                        # both player and dealer don't bust but dealer has higher score
-                        p.cash = p.cash - p.curr_bet
-                        result = 'Lost $' + str(p.curr_bet)
+                    # player and dealer have same score
+                    result = 'Bump ' + 'on hand ' + str(handIdx)
     return result
