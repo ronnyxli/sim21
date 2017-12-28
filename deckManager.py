@@ -23,8 +23,8 @@ class Deck(object):
             self.cards = self.cards + [n]*(4*num_decks)
         random.shuffle(self.cards)
         # initialize state variables
-        self.numHi = 16*num_decks # number of high cards
-        self.numAce = 4*num_decks # number of aces
+        self.numHiRem = 16*num_decks # number of high cards remaining
+        self.numAceRem = 4*num_decks # number of aces remaining
 
     def shuffle(self):
         random.shuffle(self.cards)
@@ -33,14 +33,14 @@ class Deck(object):
         card = self.cards.pop(0)
         # update state
         if card in ['J','Q','K',10]:
-            self.numHi = self.numHi - 1
+            self.numHiRem = self.numHiRem - 1
         elif card == 'A':
-            self.numAce = self.numAce - 1
+            self.numAceRem = self.numAceRem - 1
         return card
 
     def compute(self):
         '''
         Calculates probability matrix based on current state of deck
         '''
-        probHi = self.numHi/len(self.cards)
-        probAce = self.numAce/len(self.cards)
+        probHi = self.numHiRem/len(self.cards)
+        probAce = self.numAceRem/len(self.cards)
