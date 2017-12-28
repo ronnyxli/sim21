@@ -35,7 +35,7 @@ class Deck(object):
         if card in ['J','Q','K',10]:
             self.numHiRem = self.numHiRem - 1
         elif card == 'A':
-            self.numAceRem = self.numAce - 1
+            self.numAceRem = self.numAceRem - 1
         return card
 
     def compute(self):
