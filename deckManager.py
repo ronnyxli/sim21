@@ -8,6 +8,7 @@ Class for managing the deck and computing its state
 """
 
 import random
+import pdb
 
 class Deck(object):
     '''
@@ -21,14 +22,25 @@ class Deck(object):
         for n in range(2,11):
             self.cards = self.cards + [n]*(4*num_decks)
         random.shuffle(self.cards)
-        # TODO: initialize probability matrix
+        # initialize state variables
+        self.numHi = 16*num_decks # number of high cards
+        self.numAce = 4*num_decks # number of aces
 
     def shuffle(self):
         random.shuffle(self.cards)
 
     def deal(self):
         card = self.cards.pop(0)
-        # TODO: update state
+        # update state
+        if card in ['J','Q','K',10]:
+            self.numHi = self.numHi - 1
+        elif card == 'A':
+            self.numAce = self.numAce - 1
         return card
 
-    # methods to compute state, probability matrix, etc.
+    def compute(self):
+        '''
+        Calculates probability matrix based on current state of deck
+        '''
+        probHi = self.numHi/len(self.cards)
+        probAce = self.numAce/len(self.cards)

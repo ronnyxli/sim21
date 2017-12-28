@@ -2,7 +2,7 @@
 """
 Created on Sun Jul 31 19:57:40 2016
 
-Functions to simulate Blackjack
+Functions to simulate Blackjack game
 
 @author: rli
 """
@@ -35,6 +35,29 @@ def init_game():
     return params
 
 
+def score(x):
+    '''
+    Args: List of cards
+    Returns: Optimized score of cards
+    '''
+    points = 0
+    num_aces = 0
+    if len(x) > 0:
+        for card in x:
+            if card in ['J','Q','K']:
+                points = points + 10
+            elif card == 'A':
+                num_aces = num_aces + 1
+            else:
+                points = points + int(card)
+    for n in range(0,num_aces):
+        if (points + 11) > 21:
+            points = points + 1
+        else:
+            points = points + 11
+    return points
+
+
 def display_cards(player_list, flag):
     '''
     Prints all player cash and hands
@@ -42,9 +65,19 @@ def display_cards(player_list, flag):
     '''
     print('\n')
     for p in player_list:
-        print(p.name + ' ($' + str(p.cash) + '): ' + str(p.showHand(flag)))
+        hands_str = p.name + ' ($' + str(p.cash) + '): ' + '| '
+        # loop all hands
+        for hand in p.hands:
+            if (p.name == 'DEALER') & (not flag):
+                # second card dealt face-down
+                hands_str = hands_str + str(hand['cards'][0]) + ' ? '
+            else:
+                for card in hand['cards']:
+                    hands_str = hands_str + str(card) + ' '
+                hands_str = hands_str + '(' + str(score(hand['cards'])) + ') '
+            hands_str = hands_str + '| '
+        print(hands_str)
     print('\n')
-
 
 def query_bet(player_cash, min_bet):
     '''
@@ -52,7 +85,9 @@ def query_bet(player_cash, min_bet):
     '''
     valid_bet = False
     while not valid_bet:
-        bet = input('Specify bet ($' + str(player_cash) + ' available) or type "leave": ')
+        bet = input('Specify bet ($' + str(player_cash) + \
+                ' available, ' + '$' + str(min_bet) + ' minimum) ' + \
+                'or type 0 to leave: ')
         try:
             bet = int(bet)
             if (bet > player_cash):
@@ -82,4 +117,39 @@ def query_action():
     return user_action
 
 
-# def calc_results(player_list):
+def simAction(cards):
+    '''
+    Simulates by-the-book decision for cards in the hand
+    '''
+    if score(cards) < 17:
+        action = 'H'
+    else:
+        action = 'St'
+    return action
+
+
+def calc_results(cards, bet, dealer_score):
+    '''
+    Compares current hand (defined by cards) to dealer_score
+        and deduct win/loss specified by bet
+    '''
+    winnings = 0
+    if score(cards) > 21:
+        # player busts
+        if dealer_score <= 21:
+            # dealer doesn't bust
+            winnings = winnings - bet
+    else:
+        # player does not bust
+        if dealer_score > 21:
+            # dealer busts
+            winnings = winnings + bet
+        else:
+            # both player and dealer don't bust
+            if (score(cards) > dealer_score):
+                # player has higher score
+                winnings = winnings + bet
+            elif (score(cards) < dealer_score):
+                # dealer has higher score
+                winnings = winnings - bet
+    return winnings
