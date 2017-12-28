@@ -21,18 +21,18 @@ def init_game():
     '''
     params = {}
 
-    # query user for inputs
+    # game mode: query user for inputs
+    '''
     params['playerName'] = input('What is your name? ')
     params['minBet'] = int(input('What is the minimum bet at this table? (10-100) '))
     params['numDecks'] = int(input('How many decks are used? (1-8) '))
     params['numPlayers'] = int(input('How many other players at the table? (0-4) ')) + 1
-    params['playerCash'] = int(input('How much cash are you throwing down? (100-2500) '))
+    params['playerCash'] = int(input('How much cash are you throwing down? (100-2500) ')
+    '''
 
     # dev mode
-    '''
     params = {'playerName':'Ronny', 'minBet':25,
                 'numDecks':2, 'numPlayers':1, 'playerCash':400}
-    '''
 
     return params
 
