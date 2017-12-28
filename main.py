@@ -35,25 +35,40 @@ class Player(object):
         else:
             self.hands[hand_num]['cards'].append(new_card)
 
+    def numHandsLeft(self):
+        '''
+        Returns number of hands whose "done" value is False
+        '''
+        num_left = 0
+        if self.hands:
+            for hand in self.hands:
+                if not hand['done']:
+                    num_left = num_left + 1
+        return num_left
+
     def split(self, hand_num):
         '''
         Creates two hands out of the cards in the hand specified by hand_num
         '''
-        pdb.set_trace()
+        success = False # default
         if hand_num < len(self.hands):
-            if len(self.hands[hand_num]) == 2:
-                card1 = self.hands[hand_num][0]
-                card2 = self.hands[hand_num][1]
+            if len(self.hands[hand_num]['cards']) == 2:
+                card1 = self.hands[hand_num]['cards'][0]
+                card2 = self.hands[hand_num]['cards'][1]
                 if card1 == card2:
-                    del self.hands[hand_num]
-                    self.hands.append([card1])
-                    self.hands.append([card2])
+                    # valid conditions for split
+                    new_hand = {'cards':[card2], 'bet':self.curr_bet, 'done':False}
+                    # insert new hand before the current one
+                    self.hands.insert(hand_num, new_hand)
+                    del self.hands[hand_num+1]['cards'][1]
+                    success = True
                 else:
-                    print('You may only split two of the same card')
+                    print('ERROR - You may only split two of the same card')
             else:
-                print('Must have two cards in the hand to split')
+                print('ERROR - Must have two cards in the hand to split')
         else:
-            print('Hand does not exist')
+            print('ERROR - Hand does not exist')
+        return success
 
 
 
@@ -93,38 +108,68 @@ if __name__ == "__main__":
             for p in Players:
                 p.addCard(GameDeck.deal(), 0)
 
-        # loop all positions and simulate decisions for all players
+        # loop all players and simulate decisions
         for p in Players:
-            if p.name == params['playerName']:
+            # keep looping as long as unfinished hands exist
+            while (p.numHandsLeft() > 0):
                 for handIdx in range(0,len(p.hands)):
-                    if sim.score(p.hands[handIdx]['cards']) == 21:
-                        print('Blackjack!')
-                    else:
-                        sim.display_cards(Players, False)
-                        print('On hand ' + str(handIdx))
-                        user_action = sim.query_action()
-                        if user_action == 'H':
-                            while (user_action == 'H'):
-                                p.addCard(GameDeck.deal(), handIdx)
+                    if not p.hands[handIdx]['done']:
+                        print(p.name + ', hand ' + str(handIdx))
+                        if sim.score(p.hands[handIdx]['cards']) == 21:
+                            print('Blackjack!')
+                            p.hands[handIdx]['done'] = True
+                        else:
+                            # get action
+                            if p.name == params['playerName']:
                                 sim.display_cards(Players, False)
-                                print('On hand ' + str(handIdx))
+                                print('On hand ' + str(handIdx+1))
                                 user_action = sim.query_action()
-                        elif user_action == 'D':
-                            if len(p.hands[handIdx]['cards']) > 2:
-                                print('Cannot double down after hitting')
                             else:
+                                user_action = sim.simAction(p.hands[handIdx]['cards'])
+                            # process action
+                            if user_action == 'Sp':
+                                split = p.split(handIdx)
+                                if split:
+                                    # successful split - deal new cards to freshly split hands
+                                    p.addCard(GameDeck.deal(), handIdx)
+                                    p.addCard(GameDeck.deal(), handIdx+1)
+                                break
+                            elif user_action == 'D':
                                 # double bet and give user one more card
                                 p.hands[handIdx]['bet'] = 2*p.hands[handIdx]['bet']
                                 p.addCard(GameDeck.deal(), handIdx)
-                        elif user_action = 'Sp':
-                            pdb.set_trace()
-                        else: # stay
-                            p.hands[handIdx]['done'] = True
-            else:
-                # simulate action for dealer and other players
-                for handIdx in range(0,len(p.hands)):
-                    while (sim.simAction(p.hands[handIdx]['cards'])) == 'H':
-                        p.addCard(GameDeck.deal(), handIdx)
+                                p.hands[handIdx]['done'] = True
+                            elif user_action == 'H':
+                                hit = True
+                                while 1:
+                                    if hit:
+                                        p.addCard(GameDeck.deal(), handIdx)
+                                        if sim.score(p.hands[handIdx]['cards']) > 21:
+                                            if p.name == params['playerName']:
+                                                print('BUST')
+                                            break
+                                        else:
+                                            if p.name == params['playerName']:
+                                                sim.display_cards(Players, False)
+                                    # get action
+                                    if p.name == params['playerName']:
+                                        print('On hand ' + str(handIdx+1))
+                                        user_action = sim.query_action()
+                                    else:
+                                        user_action = sim.simAction(p.hands[handIdx]['cards'])
+                                    # process action
+                                    if user_action == 'H':
+                                        hit = True
+                                    elif user_action in ['Sp','D']:
+                                        print('ERROR - Cannot split or double down after hitting')
+                                        hit = False
+                                    else:
+                                        # stay
+                                        break
+                                p.hands[handIdx]['done'] = True
+                            else:
+                                # stay
+                                p.hands[handIdx]['done'] = True
 
         # display final hands
         sim.display_cards(Players, True)
@@ -132,11 +177,24 @@ if __name__ == "__main__":
         # calculate results
         for p in Players:
             if p.name is not 'DEALER':
-                result = sim.calc_results(p, sim.score(Players[-1].hands[0]['cards']))
-                if p.name == params['playerName']:
-                    print(result)
-                    if p.cash == 0:
-                        print('Out of cash')
-                        play = False
+                # loop all hands
+                net = 0
+                for handIdx in range(0,len(p.hands)):
+                    net = net + sim.calc_results(p.hands[handIdx]['cards'], \
+                            p.hands[handIdx]['bet'], \
+                            sim.score(Players[-1].hands[0]['cards']))
+                    p.cash = p.cash + net
+                    if p.name == params['playerName']:
+                        if net > 0:
+                            print('You won $' + str(np.abs(net)) + ' on hand ' + str(handIdx+1))
+                        elif net < 0:
+                            print('You lost $' + str(np.abs(net)) + ' on hand ' + str(handIdx+1))
+                        else:
+                            print('Bump on hand ' + str(handIdx+1))
+                        if p.cash == 0:
+                            print('Out of cash')
+                            play = False
+
+        # pdb.set_trace()
 
     # print game summary

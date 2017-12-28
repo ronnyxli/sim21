@@ -52,7 +52,7 @@ def score(x):
                 points = points + int(card)
     for n in range(0,num_aces):
         if (points + 11) > 21:
-            point = points + 1
+            points = points + 1
         else:
             points = points + 11
     return points
@@ -78,7 +78,6 @@ def display_cards(player_list, flag):
             hands_str = hands_str + '| '
         print(hands_str)
     print('\n')
-
 
 def query_bet(player_cash, min_bet):
     '''
@@ -129,39 +128,28 @@ def simAction(cards):
     return action
 
 
-def calc_results(player, dealer_score):
+def calc_results(cards, bet, dealer_score):
     '''
-    Calculate results and deduct win/loss
+    Compares current hand (defined by cards) to dealer_score
+        and deduct win/loss specified by bet
     '''
-    result = ''
-    for handIdx in p.hands:
-        cards = hand[handIdx]['cards']
-        bet = hand[handIdx]['bet']
-        if score(cards) > 21:
-            # player busts
-            if dealer_score > 21:
-                # dealer also busts
-                result = 'Bump ' + 'on hand ' + str(handIdx)
-            else:
-                # dealer doesn't bust
-                p.cash = p.cash - bet
-                result = 'You lost $' + str(bet) + 'on hand ' + str(handIdx)
+    winnings = 0
+    if score(cards) > 21:
+        # player busts
+        if dealer_score <= 21:
+            # dealer doesn't bust
+            winnings = winnings - bet
+    else:
+        # player does not bust
+        if dealer_score > 21:
+            # dealer busts
+            winnings = winnings + bet
         else:
-            if dealer_score > 21:
-                # dealer busts but player doesn't
-                p.cash = p.cash + bet
-                result = 'You won $' + str(bet) + 'on hand ' + str(handIdx)
-            else:
-                # both player and dealer don't bust
-                if (score(cards) > dealer_score):
-                    # player has higher score
-                    p.cash = p.cash + p.curr_bet
-                    result = 'You won $' + str(bet) + 'on hand ' + str(handIdx)
-                elif (score(cards) < dealer_score):
-                    # dealer has higher score
-                    p.cash = p.cash - p.curr_bet
-                    result = 'You lost $' + str(bet) + 'on hand ' + str(handIdx)
-                else:
-                    # player and dealer have same score
-                    result = 'Bump ' + 'on hand ' + str(handIdx)
-    return result
+            # both player and dealer don't bust
+            if (score(cards) > dealer_score):
+                # player has higher score
+                winnings = winnings + bet
+            elif (score(cards) < dealer_score):
+                # dealer has higher score
+                winnings = winnings - bet
+    return winnings
