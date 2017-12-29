@@ -8,8 +8,6 @@ Functions to simulate Blackjack game
 """
 
 import numpy as np
-import math
-import pandas as pd
 
 import pdb
 
@@ -104,19 +102,19 @@ def query_bet(player_cash, min_bet):
     return bet
 
 
-def query_action():
+def query_action(actions):
     '''
     Queries user for one of the possible actions
     '''
-    query_action = True
-    while query_action:
-        user_action = input('Type H to hit, St to stay, Sp to split, D to double down: ')
+    query = True
+    while query:
+        user_action = input('Choose one of the following ' + str(actions) + ': ')
         if user_action in ['leave', 'exit', 'stop', 'quit']:
             print("You can't fucking leave in the middle of a round, asshole.")
-        elif user_action not in ['H','St','Sp','D']:
+        elif user_action not in actions:
             print('Invalid choice - try again')
         else:
-            query_action = False
+            query = False
     return user_action
 
 

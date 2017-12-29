@@ -15,27 +15,45 @@ class Deck(object):
     '''
 
     def __init__(self, num_decks):
-        # create deck as list of cards
+        self.num_decks = num_decks
+        self.size = num_decks*52
         self.cards = []
         for card in ['J','Q','K','A']:
-            self.cards = self.cards + [card]*(4*num_decks)
+            self.cards = self.cards + [card]*(4*self.num_decks)
         for n in range(2,11):
-            self.cards = self.cards + [n]*(4*num_decks)
+            self.cards = self.cards + [n]*(4*self.num_decks)
         random.shuffle(self.cards)
         # initialize state variables
-        self.numHiRem = 16*num_decks # number of high cards remaining
-        self.numAceRem = 4*num_decks # number of aces remaining
+        self.count = 0
+        self.numHiRem = 16*self.num_decks # number of high cards remaining
+        self.numAceRem = 4*self.num_decks # number of aces remaining
 
     def shuffle(self):
+        '''
+        Create new shuffled superdeck
+        '''
+        self.cards = []
+        for card in ['J','Q','K','A']:
+            self.cards = self.cards + [card]*(4*self.num_decks)
+        for n in range(2,11):
+            self.cards = self.cards + [n]*(4*self.num_decks)
         random.shuffle(self.cards)
+        # reset state variables
+        self.count = 0
+        self.numHiRem = 16*self.num_decks # number of high cards remaining
+        self.numAceRem = 4*self.num_decks # number of aces remaining
 
     def deal(self):
         card = self.cards.pop(0)
         # update state
         if card in ['J','Q','K',10]:
+            self.count = self.count - 1
             self.numHiRem = self.numHiRem - 1
         elif card == 'A':
+            self.count = self.count - 1
             self.numAceRem = self.numAceRem - 1
+        elif (card > 1) & (card < 7):
+            self.count = self.count + 1
         return card
 
     def compute(self):

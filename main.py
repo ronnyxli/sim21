@@ -7,10 +7,8 @@ Created on Mon Jul 31 10:40:05 2017
 """
 
 import numpy as np
-
 import sim21 as sim
 import deckManager
-
 import pdb
 
 
@@ -97,6 +95,7 @@ if __name__ == "__main__":
             p.curr_bet = params['minBet']
 
         # prompt user for bet
+        print('Count = ' + str(GameDeck.count))
         bet = sim.query_bet(Players[0].cash, params['minBet'])
         if bet == 0:
             break
@@ -114,7 +113,7 @@ if __name__ == "__main__":
             while (p.numHandsLeft() > 0):
                 for handIdx in range(0,len(p.hands)):
                     if not p.hands[handIdx]['done']:
-                        print(p.name + ', hand ' + str(handIdx))
+                        # print(p.name + ', hand ' + str(handIdx))
                         if sim.score(p.hands[handIdx]['cards']) == 21:
                             print('Blackjack!')
                             p.hands[handIdx]['done'] = True
@@ -123,7 +122,8 @@ if __name__ == "__main__":
                             if p.name == params['playerName']:
                                 sim.display_cards(Players, False)
                                 print('On hand ' + str(handIdx+1))
-                                user_action = sim.query_action()
+                                # TODO: print count?
+                                user_action = sim.query_action(['H','St','Sp','D'])
                             else:
                                 user_action = sim.simAction(p.hands[handIdx]['cards'])
                             # process action
@@ -140,31 +140,24 @@ if __name__ == "__main__":
                                 p.addCard(GameDeck.deal(), handIdx)
                                 p.hands[handIdx]['done'] = True
                             elif user_action == 'H':
-                                hit = True
                                 while 1:
-                                    if hit:
-                                        p.addCard(GameDeck.deal(), handIdx)
-                                        if sim.score(p.hands[handIdx]['cards']) > 21:
-                                            if p.name == params['playerName']:
-                                                print('BUST')
-                                            break
-                                        else:
-                                            if p.name == params['playerName']:
-                                                sim.display_cards(Players, False)
+                                    p.addCard(GameDeck.deal(), handIdx)
+                                    if sim.score(p.hands[handIdx]['cards']) > 21:
+                                        if p.name == params['playerName']:
+                                            print('BUST')
+                                        break
+                                    else:
+                                        if p.name == params['playerName']:
+                                            sim.display_cards(Players, False)
                                     # get action
                                     if p.name == params['playerName']:
                                         print('On hand ' + str(handIdx+1))
-                                        user_action = sim.query_action()
+                                        # TODO: print count?
+                                        user_action = sim.query_action(['H','St'])
                                     else:
                                         user_action = sim.simAction(p.hands[handIdx]['cards'])
                                     # process action
-                                    if user_action == 'H':
-                                        hit = True
-                                    elif user_action in ['Sp','D']:
-                                        print('ERROR - Cannot split or double down after hitting')
-                                        hit = False
-                                    else:
-                                        # stay
+                                    if user_action == 'St':
                                         break
                                 p.hands[handIdx]['done'] = True
                             else:
@@ -194,6 +187,10 @@ if __name__ == "__main__":
                         if p.cash == 0:
                             print('Out of cash')
                             play = False
+
+        if (len(GameDeck.cards) < GameDeck.size/2):
+            GameDeck.shuffle()
+            print('DECK SHUFFLED')
 
         # pdb.set_trace()
 
