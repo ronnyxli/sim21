@@ -7,6 +7,7 @@ Created on Mon Jul 31 10:40:05 2017
 """
 
 import numpy as np
+import matplotlib.pyplot as plt
 import sim21 as sim
 import deckManager
 import pdb
@@ -95,7 +96,7 @@ if __name__ == "__main__":
             p.curr_bet = params['minBet']
 
         # prompt user for bet
-        print('Count = ' + str(GameDeck.count))
+        print('Count = ' + str(GameDeck.state['count']))
         bet = sim.query_bet(Players[0].cash, params['minBet'])
         if bet == 0:
             break
@@ -188,10 +189,10 @@ if __name__ == "__main__":
                             print('Out of cash')
                             play = False
 
-        if (len(GameDeck.cards) < GameDeck.size/2):
+        if GameDeck.state['decksRem'] < 0.5:
             GameDeck.shuffle()
             print('DECK SHUFFLED')
 
-        # pdb.set_trace()
+        pdb.set_trace()
 
     # print game summary

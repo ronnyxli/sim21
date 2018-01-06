@@ -9,6 +9,7 @@ DISCLAIMER 2: I do not have a gambling problem, I just like arithmetic.
 Requirements: Python 3.5+ with the following modules:
 - numpy
 - random
+- matplotlibß
 
 Basic gameplay
 1) To start the game, run the main.py script by typing "python main.py" in the terminal window.
