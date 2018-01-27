@@ -86,8 +86,14 @@ if __name__ == "__main__":
     Players.append(Player(params['playerName'], params['playerCash']))
     Players.append(Player('DEALER', 0))
 
+    # initialize figure to plot game flow on
+    fig = plt.figure()
+    plt.xlabel('True count')
+    plt.ylabel('Prob(high card)')
+
     # START GAME
     play = True
+    num_hands = 0
     while play:
 
         # restart
@@ -95,9 +101,21 @@ if __name__ == "__main__":
             p.reset()
             p.curr_bet = params['minBet']
 
+        print(GameDeck.state)
+
+        # save relevant parameters at beginning of round
+        tc = GameDeck.state['trueCount']
+        pHi = GameDeck.state['probHi']
+
         # prompt user for bet
-        print('Count = ' + str(GameDeck.state['count']))
-        bet = sim.query_bet(Players[0].cash, params['minBet'])
+        if (params['mode'] == 'play'):
+            bet = sim.query_bet(Players[0].cash, params['minBet'])
+        else:
+            # bet double the minimum if count is above threshold
+            if tc > 5:
+                bet = 2*params['minBet']
+            else:
+                bet = params['minBet']
         if bet == 0:
             break
         else:
@@ -108,91 +126,122 @@ if __name__ == "__main__":
             for p in Players:
                 p.addCard(GameDeck.deal(), 0)
 
-        # loop all players and simulate decisions
-        for p in Players:
-            # keep looping as long as unfinished hands exist
-            while (p.numHandsLeft() > 0):
-                for handIdx in range(0,len(p.hands)):
-                    if not p.hands[handIdx]['done']:
-                        # print(p.name + ', hand ' + str(handIdx))
-                        if sim.score(p.hands[handIdx]['cards']) == 21:
-                            print('Blackjack!')
-                            p.hands[handIdx]['done'] = True
-                        else:
-                            # get action
-                            if p.name == params['playerName']:
+        # check if dealer has blackjack
+        if sim.score(Players[-1].hands[0]['cards']) == 21:
+            print('Dealer has Blackjack')
+            # display final hands
+            sim.display_cards(Players, True)
+            # loop other players and check if they have blackjack
+            for p in Players[:-1]:
+                if sim.score(p.hands[0]['cards']) == 21:
+                    print('Bump on hand 1')
+                    marker = 'b.'
+                else:
+                    p.cash = p.cash - p.hands[0]['bet']
+                    print('You lost $' + str(p.hands[0]['bet']) + ' on hand 1')
+                    marker = 'r.'
+        else:
+            # loop all players and simulate decisions
+            for p in Players:
+                # keep looping as long as unfinished hands exist
+                while (p.numHandsLeft() > 0):
+                    for handIdx in range(0,len(p.hands)):
+                        if not p.hands[handIdx]['done']:
+                            if sim.score(p.hands[handIdx]['cards']) == 21:
+                                print('Blackjack!')
+                                p.hands[handIdx]['done'] = True
+                            else:
+                                # get action
                                 sim.display_cards(Players, False)
-                                print('On hand ' + str(handIdx+1))
-                                # TODO: print count?
-                                user_action = sim.query_action(['H','St','Sp','D'])
-                            else:
-                                user_action = sim.simAction(p.hands[handIdx]['cards'])
-                            # process action
-                            if user_action == 'Sp':
-                                split = p.split(handIdx)
-                                if split:
-                                    # successful split - deal new cards to freshly split hands
+                                if (p.name == params['playerName']) & (params['mode'] == 'play'):
+                                    # gameplay mode
+                                    print('On hand ' + str(handIdx+1))
+                                    action = sim.query_action(['H','St','Sp','D'])
+                                elif (p.name == 'DEALER'):
+                                    action = sim.sim_dealer_action(p.hands[handIdx]['cards'])
+                                else:
+                                    # simulation mode
+                                    action = sim.sim_player_action(p.hands[handIdx]['cards'], \
+                                                    Players[-1].hands[0]['cards'][0])
+                                # process action
+                                if action == 'Sp':
+                                    split = p.split(handIdx)
+                                    if split:
+                                        # successful split - deal new cards to freshly split hands
+                                        p.addCard(GameDeck.deal(), handIdx)
+                                        p.addCard(GameDeck.deal(), handIdx+1)
+                                    break
+                                elif action == 'D':
+                                    # double bet and give user one more card
+                                    p.hands[handIdx]['bet'] = 2*p.hands[handIdx]['bet']
                                     p.addCard(GameDeck.deal(), handIdx)
-                                    p.addCard(GameDeck.deal(), handIdx+1)
-                                break
-                            elif user_action == 'D':
-                                # double bet and give user one more card
-                                p.hands[handIdx]['bet'] = 2*p.hands[handIdx]['bet']
-                                p.addCard(GameDeck.deal(), handIdx)
-                                p.hands[handIdx]['done'] = True
-                            elif user_action == 'H':
-                                while 1:
-                                    p.addCard(GameDeck.deal(), handIdx)
-                                    if sim.score(p.hands[handIdx]['cards']) > 21:
-                                        if p.name == params['playerName']:
-                                            print('BUST')
-                                        break
-                                    else:
-                                        if p.name == params['playerName']:
-                                            sim.display_cards(Players, False)
-                                    # get action
-                                    if p.name == params['playerName']:
-                                        print('On hand ' + str(handIdx+1))
-                                        # TODO: print count?
-                                        user_action = sim.query_action(['H','St'])
-                                    else:
-                                        user_action = sim.simAction(p.hands[handIdx]['cards'])
-                                    # process action
-                                    if user_action == 'St':
-                                        break
-                                p.hands[handIdx]['done'] = True
-                            else:
-                                # stay
-                                p.hands[handIdx]['done'] = True
+                                    p.hands[handIdx]['done'] = True
+                                elif action == 'H':
+                                    while 1:
+                                        p.addCard(GameDeck.deal(), handIdx)
+                                        if sim.score(p.hands[handIdx]['cards']) > 21:
+                                            if (p.name == params['playerName']) & (params['mode'] == 'play'):
+                                                print('BUST')
+                                            break
+                                        else:
+                                            # get action
+                                            if (p.name == params['playerName']) & (params['mode'] == 'play'):
+                                                # gameplay mode
+                                                sim.display_cards(Players, False)
+                                                print('On hand ' + str(handIdx+1))
+                                                action = sim.query_action(['H','St','Sp','D'])
+                                            elif (p.name == 'DEALER'):
+                                                action = sim.sim_dealer_action(p.hands[handIdx]['cards'])
+                                            else:
+                                                # simulation mode
+                                                action = sim.sim_player_action(p.hands[handIdx]['cards'], \
+                                                                Players[-1].hands[0]['cards'][0])
+                                        # process action
+                                        if action == 'St':
+                                            break
+                                    p.hands[handIdx]['done'] = True
+                                else:
+                                    # stay
+                                    p.hands[handIdx]['done'] = True
 
-        # display final hands
-        sim.display_cards(Players, True)
+            # display final hands
+            sim.display_cards(Players, True)
 
-        # calculate results
-        for p in Players:
-            if p.name is not 'DEALER':
+            # calculate results
+            for p in Players[:-1]:
                 # loop all hands
-                net = 0
                 for handIdx in range(0,len(p.hands)):
-                    net = net + sim.calc_results(p.hands[handIdx]['cards'], \
-                            p.hands[handIdx]['bet'], \
+                    outcome = sim.calc_result(p.hands[handIdx]['cards'], \
                             sim.score(Players[-1].hands[0]['cards']))
-                    p.cash = p.cash + net
-                    if p.name == params['playerName']:
-                        if net > 0:
-                            print('You won $' + str(np.abs(net)) + ' on hand ' + str(handIdx+1))
-                        elif net < 0:
-                            print('You lost $' + str(np.abs(net)) + ' on hand ' + str(handIdx+1))
-                        else:
-                            print('Bump on hand ' + str(handIdx+1))
-                        if p.cash == 0:
-                            print('Out of cash')
-                            play = False
+                    if outcome == 'W':
+                        p.cash = p.cash + p.hands[handIdx]['bet']
+                        if p.name == params['playerName']:
+                            print('You won $' + str(p.hands[handIdx]['bet']) + ' on hand ' + str(handIdx+1))
+                            # update plot with beginning state and outcome of the round
+                            plt.plot(tc, pHi, 'g.')
+                    elif outcome == 'L':
+                        p.cash = p.cash - p.hands[handIdx]['bet']
+                        if p.name == params['playerName']:
+                            print('You lost $' + str(p.hands[handIdx]['bet']) + ' on hand ' + str(handIdx+1))
+                            plt.plot(tc, pHi, 'r.')
+                    else:
+                        print('Bump on hand ' + str(handIdx+1))
+                        plt.plot(tc, pHi, 'b.')
+
+        if p.cash == 0:
+            print('Out of cash')
+            play = False
+
+        num_hands = num_hands + 1
+        print(num_hands)
+        if num_hands == params['maxHands']:
+            play = False
 
         if GameDeck.state['decksRem'] < 0.5:
             GameDeck.shuffle()
             print('DECK SHUFFLED')
 
-        pdb.set_trace()
-
     # print game summary
+    print('Final winnings = ' + str(Players[0].cash))
+    plt.show()
+    plt.close()

@@ -22,7 +22,7 @@ class Deck(object):
                         'decksRem':self.numDecks,
                         'numHiRem':16*self.numDecks,
                         'numAceRem':4*self.numDecks,
-                        'probHi':(16*self.numDecks)/(self.numDecks*52)}
+                        'probHi':16/52}
         # Create new shuffled superdeck
         self.cards = []
         for card in ['J','Q','K','A']:
@@ -39,7 +39,7 @@ class Deck(object):
         self.state['decksRem'] = self.numDecks
         self.state['numHiRem'] = 16*self.numDecks # number of high cards remaining
         self.state['numAceRem'] = 4*self.numDecks # number of aces remaining
-        self.state['probHi'] = self.state['numHiRem']/self.state['cardsRem']
+        self.state['probHi'] = 16/52
         # Create new shuffled superdeck
         self.cards = []
         for card in ['J','Q','K','A']:
@@ -51,15 +51,16 @@ class Deck(object):
     def deal(self):
         card = self.cards.pop(0)
         self.state['numCardsPlayed'] = self.state['numCardsPlayed'] + 1
-        self.state['decksRem'] = len(self.cards)/(self.numDecks*52)
+        self.state['decksRem'] = len(self.cards)/52
         # update state
         if card in ['J','Q','K',10]:
             self.state['count'] = self.state['count'] - 1
             self.state['numHiRem'] = self.state['numHiRem'] - 1
         elif card == 'A':
             self.state['count'] = self.state['count'] - 1
-            self.state['numAceRem'] = state['numAceRem'] - 1
+            self.state['numAceRem'] = self.state['numAceRem'] - 1
         elif (card > 1) & (card < 7):
             self.state['count'] = self.state['count'] + 1
         self.state['probHi'] = self.state['numHiRem']/len(self.cards)
+        self.state['trueCount'] = self.state['count']/self.state['decksRem']
         return card

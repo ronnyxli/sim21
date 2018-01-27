@@ -8,7 +8,6 @@ Functions to simulate Blackjack game
 """
 
 import numpy as np
-
 import pdb
 
 
@@ -21,6 +20,8 @@ def init_game():
 
     # game mode: query user for inputs
     '''
+    params['mode'] = input('Type sim for simulation mode, play for gameplay mode: ')
+    params['maxHands'] = int(input('How many hands to simulate? '))
     params['playerName'] = input('What is your name? ')
     params['minBet'] = int(input('What is the minimum bet at this table? (10-100) '))
     params['numDecks'] = int(input('How many decks are used? (1-8) '))
@@ -29,8 +30,8 @@ def init_game():
     '''
 
     # dev mode
-    params = {'playerName':'Ronny', 'minBet':25,
-                'numDecks':2, 'numPlayers':1, 'playerCash':400}
+    params = {'mode':'sim','maxHands':1000, 'playerName':'Ronny', 'minBet':25,
+                'numDecks':2, 'numPlayers':1, 'playerCash':1000}
 
     return params
 
@@ -118,9 +119,54 @@ def query_action(actions):
     return user_action
 
 
-def simAction(cards):
+def sim_player_action(cards, dealer_card):
     '''
-    Simulates by-the-book decision for cards in the hand
+    Simulates by-the-book decision for a player
+    '''
+    # pdb.set_trace()
+    pScore = score(cards) # player score
+    dScore = score([dealer_card]) # dealer score
+    if cards.count('A') == 2:
+        action = 'Sp'
+    else:
+        if 'A' in cards:
+            # soft hands
+            if dScore < 7:
+                # dealer holding 2-6
+                if pScore < 16:
+                    action = 'H'
+                elif pScore < 19:
+                    action = 'D'
+                else:
+                    action = 'St'
+            else:
+                # dealer holding 7-A
+                if pScore < 17:
+                    action = 'H'
+                else:
+                    action = 'St'
+        else:
+            # hard hands
+            if dScore < 7:
+                # dealer holding 2-6
+                if pScore < 9:
+                    action = 'H'
+                elif pScore < 12:
+                    action = 'D'
+                else:
+                    action = 'St'
+            else:
+                # dealer holding 7-A
+                if pScore < 17:
+                    action = 'H'
+                else:
+                    action = 'St'
+    return action
+
+
+def sim_dealer_action(cards):
+    '''
+    Simulates decision for dealer
     '''
     if score(cards) < 17:
         action = 'H'
@@ -129,28 +175,28 @@ def simAction(cards):
     return action
 
 
-def calc_results(cards, bet, dealer_score):
+def calc_result(cards, dealer_score):
     '''
     Compares current hand (defined by cards) to dealer_score
         and deduct win/loss specified by bet
     '''
-    winnings = 0
+    result = ''
     if score(cards) > 21:
         # player busts
-        if dealer_score <= 21:
-            # dealer doesn't bust
-            winnings = winnings - bet
+        result = 'L'
     else:
         # player does not bust
         if dealer_score > 21:
             # dealer busts
-            winnings = winnings + bet
+            result = 'W'
         else:
             # both player and dealer don't bust
             if (score(cards) > dealer_score):
                 # player has higher score
-                winnings = winnings + bet
+                result = 'W'
             elif (score(cards) < dealer_score):
                 # dealer has higher score
-                winnings = winnings - bet
-    return winnings
+                result = 'L'
+            else:
+                result = 'B'
+    return result
