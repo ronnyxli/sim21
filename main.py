@@ -7,9 +7,10 @@ Created on Mon Jul 31 10:40:05 2017
 """
 
 import numpy as np
+import pandas as pd
 
 import sim21 as sim
-import deckManager
+import deckManager as dm
 
 import pdb
 
@@ -19,19 +20,19 @@ class Player(object):
     Class object describing each player (incl dealer)
     '''
 
-    def __init__(self, name, cash):
-        self.name = name
+    def __init__(self, cash):
         self.cash = cash
-        self.curr_bet = 0
-        self.hands = [] # list of hands (each hand is a dict)
+        self.bet = 0 # current bet
+        self.hands = [] # list of hands (each hand is a list)
 
     def reset(self):
+        self.bet = 0
         self.hands = []
 
     def addCard(self, new_card, hand_num):
-        if not self.hands:
+        if len(self.hands) == 0:
             # new hand
-            self.hands.append({'cards':[new_card], 'bet':self.curr_bet, 'done':False})
+            self.hands.append({'cards':[new_card], 'done':False})
         else:
             self.hands[hand_num]['cards'].append(new_card)
 
@@ -78,39 +79,53 @@ if __name__ == "__main__":
     params = sim.init_game()
 
     # create instance of Deck class (described in deckManager.py)
-    GameDeck = deckManager.Deck(params['numDecks'])
+    GameDeck = dm.Deck(params['numDecks'])
 
-    # create list of Player instances
-    Players = [] # empty list
+    # create dict of Player instances
+    Players = {}
     for n in range(0,params['numPlayers']-1):
-        Players.append(Player('Player' + str(n+1), params['playerCash']))
-    Players.append(Player(params['playerName'], params['playerCash']))
-    Players.append(Player('DEALER', 0))
+        Players['P' + str(n+1)] = Player(params['playerCash'])
+    Players[params['playerName']] = Player(params['playerCash'])
+    Players['DEALER'] = Player(0)
 
     # START GAME
     play = True
     while play:
 
-        # restart
-        for p in Players:
-            p.reset()
-            p.curr_bet = params['minBet']
+        # start of a new round - reset and prompt for bets
+        for key in Players:
+            Players[key].reset()
+            if key == params['playerName']:
+                if params['mode'] == 1:
+                    # gameplay mode
+                    bet = sim.query_bet(Players[key].cash, params['minBet'])
+                else:
+                    # simulation mode
+                    bet = sim.sim_bet(Players[key].cash, params['minBet'])
+                Players[key].bet = bet
+            else:
+                Players[key].bet = params['minBet']
 
-        # prompt user for bet
-        bet = sim.query_bet(Players[0].cash, params['minBet'])
-        if bet == 0:
+        # check player bet
+        if Players[params['playerName']].bet == 0:
             break
-        else:
-            Players[0].curr_bet = bet
 
-        # initial deal: loop all rows and deal 2 cards to each player
+        # initial deal - 2 cards each
         for n in range(0,2):
-            for p in Players:
-                p.addCard(GameDeck.deal(), 0)
+            for key in Players:
+                Players[key].addCard(GameDeck.deal(), 0)
 
+        sim.display_cards(Players, True)
+        pdb.set_trace()
         # loop all players and simulate decisions
-        for p in Players:
+        for key in Players:
+
+            # Players[key].hands
+
             # keep looping as long as unfinished hands exist
+
+
+
             while (p.numHandsLeft() > 0):
                 for handIdx in range(0,len(p.hands)):
                     if not p.hands[handIdx]['done']:
@@ -125,7 +140,7 @@ if __name__ == "__main__":
                                 print('On hand ' + str(handIdx+1))
                                 user_action = sim.query_action()
                             else:
-                                user_action = sim.simAction(p.hands[handIdx]['cards'])
+                                user_action = sim.sim_action(p.hands[handIdx]['cards'])
                             # process action
                             if user_action == 'Sp':
                                 split = p.split(handIdx)
@@ -156,7 +171,7 @@ if __name__ == "__main__":
                                         print('On hand ' + str(handIdx+1))
                                         user_action = sim.query_action()
                                     else:
-                                        user_action = sim.simAction(p.hands[handIdx]['cards'])
+                                        user_action = sim.sim_action(p.hands[handIdx]['cards'])
                                     # process action
                                     if user_action == 'H':
                                         hit = True

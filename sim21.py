@@ -20,19 +20,20 @@ def init_game():
         Returns: Shuffled self.deck as list, game GAME as dataframe
     '''
     params = {}
-
+    '''
     # query user for inputs
     params['playerName'] = input('What is your name? ')
     params['minBet'] = int(input('What is the minimum bet at this table? (10-100) '))
     params['numDecks'] = int(input('How many decks are used? (1-8) '))
     params['numPlayers'] = int(input('How many other players at the table? (0-4) ')) + 1
     params['playerCash'] = int(input('How much cash are you throwing down? (100-2500) '))
-
+    params['mode'] = int(input('1 for game play, 2 for simuation: '))
+    params['scheme'] = input('Card-counting scheme: ')
+    '''
     # dev mode
-    '''
     params = {'playerName':'Ronny', 'minBet':25,
-                'numDecks':2, 'numPlayers':1, 'playerCash':400}
-    '''
+                'numDecks':2, 'numPlayers':4, 'playerCash':500,
+                'mode':1, 'scheme':'HiLo'}
 
     return params
 
@@ -60,17 +61,16 @@ def score(x):
     return points
 
 
-def display_cards(player_list, flag):
+def display_cards(player_dict, flag):
     '''
     Prints all player cash and hands
         Args: List of Player class instance
     '''
-    print('\n')
-    for p in player_list:
-        hands_str = p.name + ' ($' + str(p.cash) + '): ' + '| '
+    for key in player_dict:
+        hands_str = key + ' ($' + str(player_dict[key].cash) + '): ' + '| '
         # loop all hands
-        for hand in p.hands:
-            if (p.name == 'DEALER') & (not flag):
+        for hand in player_dict[key].hands:
+            if (key == 'DEALER') & (not flag):
                 # second card dealt face-down
                 hands_str = hands_str + str(hand['cards'][0]) + ' ? '
             else:
@@ -79,7 +79,6 @@ def display_cards(player_list, flag):
                 hands_str = hands_str + '(' + str(score(hand['cards'])) + ') '
             hands_str = hands_str + '| '
         print(hands_str)
-    print('\n')
 
 
 def query_bet(player_cash, min_bet):
@@ -104,6 +103,15 @@ def query_bet(player_cash, min_bet):
     return bet
 
 
+def sim_bet(player_cash, min_bet, deck_state):
+    '''
+    Simulate the bet based on the state of the remaining cards
+    '''
+    pdb.set_trace()
+
+    return bet
+
+
 def query_action():
     '''
     Queries user for one of the possible actions
@@ -120,7 +128,7 @@ def query_action():
     return user_action
 
 
-def simAction(cards):
+def sim_action(cards):
     '''
     Simulates by-the-book decision for cards in the hand
     '''
