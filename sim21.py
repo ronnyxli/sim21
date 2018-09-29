@@ -14,34 +14,47 @@ import pandas as pd
 import pdb
 
 
-def init_game():
+def init_game(dev_mode):
     '''
     Set simulation parameters
         Returns: Shuffled self.deck as list, game GAME as dataframe
     '''
-    params = {}
-    '''
-    # query user for inputs
-    params['playerName'] = input('What is your name? ')
-    params['minBet'] = int(input('What is the minimum bet at this table? (10-100) '))
-    params['numDecks'] = int(input('How many decks are used? (1-8) '))
-    params['numPlayers'] = int(input('How many other players at the table? (0-4) ')) + 1
-    params['playerCash'] = int(input('How much cash are you throwing down? (100-2500) '))
-    params['mode'] = int(input('1 for game play, 2 for simuation: '))
-    params['scheme'] = input('Card-counting scheme: ')
-    '''
-    # dev mode
-    params = {'playerName':'Ronny', 'minBet':25,
-                'numDecks':2, 'numPlayers':4, 'playerCash':500,
-                'mode':1, 'scheme':'HiLo'}
 
-    return params
+    if dev_mode:
+        params = {'playerName':'Ronny', 'minBet':25, 'numDecks':2,\
+            'numOpponents':4, 'playerPos':1, 'playerCash':500,\
+            'mode':1, 'scheme':'HiLo'}
+    else:
+        params = {}
+        # query user for inputs
+        params['playerName'] = input('What is your name? ')
+        params['minBet'] = int(input('What is the minimum bet at this table? (10-100) '))
+        params['numDecks'] = int(input('How many decks are used? (1-8) '))
+        params['numOpponents'] = int(input('How many other players are at the table? (0-4) '))
+        params['playerPos'] = int(input('Which seat are you in? (1-' + str(params['numOpponents']+1) + ') ')) - 1
+        params['playerCash'] = int(input('How much cash are you throwing down? (100-2500) '))
+        params['mode'] = int(input('1 for game play, 2 for simuation: '))
+        params['scheme'] = input('Card-counting scheme: ')
+
+    # create list of players
+    player_list = []
+    for n in range(0,params['numOpponents']+2):
+        player_dict = {'Name':'Player' + str(n),\
+            'Cards':[[]], 'Cash':params['playerCash'], 'Bet':[]}
+        player_list.append(player_dict)
+
+    # replace first spot with user and last spot with dealer
+    player_list[params['playerPos']]['Name'] = params['playerName']
+    player_list[-1]['Name'] = 'Dealer'
+
+    return params, player_list
 
 
 def score(x):
     '''
-    Args: List of cards
-    Returns: Optimized score of cards
+    Calculate a score given hand x
+        Args: List of cards
+        Returns: Optimized score of cards
     '''
     points = 0
     num_aces = 0
@@ -61,49 +74,56 @@ def score(x):
     return points
 
 
-def display_cards(player_dict, flag):
+def show_cards(player_list, first):
     '''
     Prints all player cash and hands
         Args: List of Player class instance
     '''
-    for key in player_dict:
-        hands_str = key + ' ($' + str(player_dict[key].cash) + '): ' + '| '
-        # loop all hands
-        for hand in player_dict[key].hands:
-            if (key == 'DEALER') & (not flag):
-                # second card dealt face-down
-                hands_str = hands_str + str(hand['cards'][0]) + ' ? '
-            else:
-                for card in hand['cards']:
-                    hands_str = hands_str + str(card) + ' '
-                hands_str = hands_str + '(' + str(score(hand['cards'])) + ') '
-            hands_str = hands_str + '| '
-        print(hands_str)
+    if first:
+        # find dealer and hide the first card of his/her first hand
+        dealer_idx = [x['Name'] for x in player_list].index('Dealer')
+        player_list[dealer_idx]['Cards'][0][0] = '?'
+    print(pd.DataFrame(player_list))
 
 
-def query_bet(player_cash, min_bet):
+def split(x, new_cards):
+    '''
+    Split hand x into two hands
+    '''
+    y = []
+    pdb.set_trace()
+    return y
+    
+
+def query_bet(player_list, bet_range):
     '''
     Queries the user for a bet and checks that it is valid
     '''
     valid_bet = False
     while not valid_bet:
-        bet = input('Specify bet ($' + str(player_cash) + \
-                ' available, ' + '$' + str(min_bet) + ' minimum) ' + \
-                'or type 0 to leave: ')
+        bet = input('Specify bet between $' + str(bet_range[0]) + \
+            ' and $' + str(bet_range[1]) + ' or type 0 to leave: ')
         try:
             bet = int(bet)
-            if (bet > player_cash):
-                print('Bet cannot exceed $' + str(player_cash))
-            elif (bet < min_bet) and (bet is not 0):
-                print('Minimum bet is ' + str(min_bet))
+            if (bet > bet_range[1]):
+                print('Bet cannot exceed $' + str(bet_range[1]))
+            elif (bet < bet_range[0]) and (bet is not 0):
+                print('Minimum bet is ' + str(bet_range[0]))
             else:
                 valid_bet = True
         except ValueError:
             print('Bet must be an integer')
-    return bet
+
+    # clear hand(s) and assign bet for all players
+    for n in range(0,len(player_list)):
+        # note that each player's cards is represented by a list of lists
+        player_list[n]['Cards'] = [[]]
+        player_list[n]['Bet'] = bet
+
+    return player_list
 
 
-def sim_bet(player_cash, min_bet, deck_state):
+def auto_bet(player_cash, min_bet, deck_state):
     '''
     Simulate the bet based on the state of the remaining cards
     '''
@@ -112,7 +132,7 @@ def sim_bet(player_cash, min_bet, deck_state):
     return bet
 
 
-def query_action():
+def query_decision(options):
     '''
     Queries user for one of the possible actions
     '''
@@ -121,22 +141,46 @@ def query_action():
         user_action = input('Type H to hit, St to stay, Sp to split, D to double down: ')
         if user_action in ['leave', 'exit', 'stop', 'quit']:
             print("You can't fucking leave in the middle of a round, asshole.")
-        elif user_action not in ['H','St','Sp','D']:
+        elif user_action not in options:
             print('Invalid choice - try again')
         else:
             query_action = False
     return user_action
 
 
-def sim_action(cards):
+def auto_decision(inp):
     '''
-    Simulates by-the-book decision for cards in the hand
+    Simulates by-the-book decision for cards in hands inp
     '''
-    if score(cards) < 17:
-        action = 'H'
-    else:
-        action = 'St'
-    return action
+    for x in inp:
+        if score(x) < 17:
+            action = 'H'
+        else:
+            action = 'St'
+        return action
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 def calc_results(cards, bet, dealer_score):
