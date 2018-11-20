@@ -93,7 +93,7 @@ def split(x, new_cards):
     y = []
     pdb.set_trace()
     return y
-    
+
 
 def query_bet(player_list, bet_range):
     '''
@@ -148,16 +148,36 @@ def query_decision(options):
     return user_action
 
 
-def auto_decision(inp):
+def auto_decision(x, dealer_card):
     '''
-    Simulates by-the-book decision for cards in hands inp
+    Simulates by-the-book decision
+        Args: x = hand of cards, dealer_card = dealer's up card
+        Out: action (str)
     '''
-    for x in inp:
-        if score(x) < 17:
-            action = 'H'
+    action = 0
+    if len(x) == 2:
+        if x[0] == x[1]:
+            # both cards the same - decide whether to split
+            if x in ['A',7]:
+                pdb.set_trace()
+                action = 'Sp'
         else:
+            # determine whether to double
+            if score(x) in [10,11]:
+                action = 'D'
+    if not action:
+        if score(x) > 16:
             action = 'St'
-        return action
+        else:
+            if score(x) < 13:
+                action = 'H'
+            else:
+                if dealer_card in ['J','Q','K',10]:
+                    action = 'H'
+                else:
+                    action = 'St'
+
+    return action
 
 
 

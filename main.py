@@ -41,6 +41,33 @@ class Deck(object):
 
 
 
+# TODO: recursive function to
+def update_hands(hands, dealer_card):
+    '''
+    '''
+    # call function until decision for all hands in St
+    for hand in hands:
+
+        # for each hand, get initial auto_decision
+        decision = sim.auto_decision(hand, dealer_card)
+
+        if decision == 'St':
+            break
+        else:
+            if decision == 'H':
+                hand.append(GameDeck.deal())
+            elif decision == 'Sp':
+                pdb.set_trace()
+            elif decision == 'D':
+                hand.append(GameDeck.deal())
+                decision = 'St'
+            pdb.set_trace()
+            # call function until decision for all hands in St
+            update_hands(hands, dealer_card)
+
+    pdb.set_trace()
+    return hands
+
 if __name__ == "__main__":
 
     # gather user inputs and initialize list of players
@@ -63,15 +90,20 @@ if __name__ == "__main__":
 
         sim.show_cards(players, True)
 
-        for p in range(0,len(players)):
-            hands = players[p]['Cards']
-            decision = sim.auto_decision(hands)
-            while decision in ['H','Sp','D']:
-                # TODO: update hands with GameDeck.deal()
-                pdb.set_trace()
-                decision = sim.auto_decision(hands)
+        # save dealer's up card
+        dealer_idx = [x['Name'] for x in players].index('Dealer')
+        dealer_up_card = players[dealer_idx]['Cards'][0][1]
 
-            players[p]['Cards'] = hands
+        for p in range(0,len(players)):
+            if players[p]['Name'] is not 'Dealer':
+                curr_hands = players[p]['Cards']
+                # call recursive function to update curr_hands
+                new_hands = update_hands(curr_hands, dealer_up_card)
+                pdb.set_trace()
+                # replace with new hands
+                players[p]['Cards'] = new_hands
+
+        pdb.set_trace()
 
         sim.calc_results(players)
 
@@ -79,8 +111,4 @@ if __name__ == "__main__":
 
         pdb.set_trace()
 
-        # query action
-
-
-
-    pdb.set_trace()
+    # TODO: display game summary
