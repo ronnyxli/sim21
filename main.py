@@ -1,16 +1,58 @@
+'''
+Ronny Li
 
-import numpy as np
+Initial version: September 13, 2019
+
+Usage:
+  main.py (--play|--sim)
+
+Options:
+  -h, --help              Show this screen
+  --play|--sim            Gameplay (interactive) or simulation mode
+'''
+
+import pandas as pd
 import random
-
-import sim21 as sim
-
+# from docopt import docopt
+from collections import defaultdict
+import sim
 import pdb
 
+
+def init_game():
+    '''
+    Get parameters of game and initialize list of player dicts
+    '''
+
+    params = defaultdict(int)
+    params['num_decks'] = 4
+    params['num_players'] = 5
+    params['player_position'] = 3
+    params['min_bet'] = 5
+    params['starting_cash'] = 200
+    player_name = 'Ronny'
+    #TODO: blackjack payout
+
+    player_list = []
+    for n in range(0,params['num_players']):
+        if n == params['player_position']-1:
+            # user
+            player_dict = {'Name':player_name,
+                           'Hands':[],
+                           'Cash': params['starting_cash']}
+        else:
+            # simulated player
+            player_dict = {'Name':'P' + str(n),
+                           'Hands':[],
+                           'Cash': params['starting_cash']}
+        player_list.append(player_dict)
+
+    return params, player_list
 
 class Deck(object):
 
     def __init__(self, num_decks):
-        # create deck as list of cards
+        # initialize deck as list of cards
         self.cards = []
         for card in ['J','Q','K','A']:
             self.cards = self.cards + [card]*(4*num_decks)
@@ -19,96 +61,69 @@ class Deck(object):
         random.shuffle(self.cards)
         # initialize dict for state variables
         self.state = {'numHi':16*num_decks, 'numAce':4*num_decks}
+        # TODO: probability matrix?
 
     def shuffle(self):
         random.shuffle(self.cards)
 
     def deal(self):
         card = self.cards.pop(0)
-        # update state
         if card in ['J','Q','K',10]:
             self.state['numHi'] = self.state['numHi'] - 1
         elif card == 'A':
             self.state['numAce'] = self.state['numAce'] - 1
         return card
 
-    def compute(self):
+    def update(self):
         '''
-        Calculates probability matrix based on current state of deck
+        Update state variables and probability matrix
         '''
-        probHi = self.state['numHi']/len(self.cards)
-        probAce = self.state['numAce']/len(self.cards)
-
-
-
-# TODO: recursive function to
-def update_hands(hands, dealer_card):
-    '''
-    '''
-    # call function until decision for all hands in St
-    for hand in hands:
-
-        # for each hand, get initial auto_decision
-        decision = sim.auto_decision(hand, dealer_card)
-
-        if decision == 'St':
-            break
-        else:
-            if decision == 'H':
-                hand.append(GameDeck.deal())
-            elif decision == 'Sp':
-                pdb.set_trace()
-            elif decision == 'D':
-                hand.append(GameDeck.deal())
-                decision = 'St'
-            pdb.set_trace()
-            # call function until decision for all hands in St
-            update_hands(hands, dealer_card)
-
-    pdb.set_trace()
-    return hands
-
-if __name__ == "__main__":
-
-    # gather user inputs and initialize list of players
-    params, players = sim.init_game(True)
-
-    # initialize deck
-    GameDeck = Deck(params['numDecks'])
-
-    # start simulation
-    play = True
-    while play:
-
-        # simulate a round
-        players = sim.query_bet(players, [params['minBet'],params['playerCash']])
-
-        # initial deal - 2 cards per player
-        for n in range(0,2):
-            for p in range(0,len(players)):
-                players[p]['Cards'][0].append(GameDeck.deal())
-
-        sim.show_cards(players, True)
-
-        # save dealer's up card
-        dealer_idx = [x['Name'] for x in players].index('Dealer')
-        dealer_up_card = players[dealer_idx]['Cards'][0][1]
-
-        for p in range(0,len(players)):
-            if players[p]['Name'] is not 'Dealer':
-                curr_hands = players[p]['Cards']
-                # call recursive function to update curr_hands
-                new_hands = update_hands(curr_hands, dealer_up_card)
-                pdb.set_trace()
-                # replace with new hands
-                players[p]['Cards'] = new_hands
-
         pdb.set_trace()
 
-        sim.calc_results(players)
 
-        sim.show_cards(players,False)
+class Hand(object):
 
+    def __init__(self):
+        self.cards = []
+        self.score = 0
+
+    def calc_score(self):
+        for card in self.cards:
+            if card in ['J','Q','K']:
+                # face card - add 10
+                self.score += 10
+            elif card in range(2,11):
+                # add card value
+                self.score += card
+            else:
+                # ace - add 1 or 11
+                self.score += 11
+                if self.score > 21:
+                    self.score -= 10
+
+
+
+if __name__ == '__main__':
+
+    # initialize
+    # args = docopt(__doc__)
+    params, players = init_game()
+    shoe = Deck(params['num_decks'])
+    dealer_hand = Hand()
+
+    PLAY = True
+    while PLAY:
         pdb.set_trace()
 
-    # TODO: display game summary
+        # TODO: simulate bets for other players; query bet for user if gamelay mode
+
+        # TODO: initial deal - 2 cards to each player and dealer
+
+        # TODO: loop through all players - simulate bets and query bet for user if gameplay mode
+
+
+
+    # TODO: print summary
+
+
+    # TODO: initialize player dict
