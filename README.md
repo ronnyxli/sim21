@@ -9,7 +9,7 @@ Required Python libraries: numpy, pandas, random, math
 
 The goal is of the simulator is to maximize the expected winnings for any given hand, defined as the product of the hand's probability of winning and the amount risked.
 
-Total expected winning = P(BJ)xBJ_PAYOUT + P(win)xBET
+Total expected winning = [P(BJ) x BJ_PAYOUT x BET] + [P(win) x BET]
 
 NOTE: The probability of an event occurring is denoted as P(event).
 
