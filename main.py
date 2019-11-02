@@ -4,16 +4,16 @@ Ronny Li
 Initial version: September 13, 2019
 
 Usage:
-  main.py (--play|--sim)
+    main.py (--play|--sim)
 
 Options:
-  -h, --help              Show this screen
-  --play|--sim            Gameplay (interactive) or simulation mode
+    -h, --help              Show this screen
+    --play|--sim            Gameplay (interactive) or simulation mode
 '''
 
 import pandas as pd
 import random
-# from docopt import docopt
+from docopt import docopt
 from collections import defaultdict
 import sim
 import pdb
@@ -27,11 +27,12 @@ def init_game():
     params = defaultdict(int)
     params['num_decks'] = 4
     params['num_players'] = 5
-    params['player_position'] = 3
+    params['player_position'] = 5
     params['min_bet'] = 5
+    params['max_bet'] = 50
     params['starting_cash'] = 200
+    params['bj_payout'] = 6/5
     player_name = 'Ronny'
-    #TODO: blackjack payout
 
     player_list = []
     for n in range(0,params['num_players']):
@@ -48,6 +49,7 @@ def init_game():
         player_list.append(player_dict)
 
     return params, player_list
+
 
 class Deck(object):
 
@@ -86,6 +88,7 @@ class Hand(object):
     def __init__(self):
         self.cards = []
         self.score = 0
+        self.win_prob = 0
 
     def calc_score(self):
         for card in self.cards:
@@ -102,28 +105,43 @@ class Hand(object):
                     self.score -= 10
 
 
+def main(args):
 
-if __name__ == '__main__':
-
-    # initialize
-    # args = docopt(__doc__)
     params, players = init_game()
-    shoe = Deck(params['num_decks'])
+    MasterDeck = Deck(params['num_decks'])
     dealer_hand = Hand()
 
     PLAY = True
     while PLAY:
-        pdb.set_trace()
+
+        # query player bet
+        if args['--play']:
+            player_bet = sim.query_bet(params['min_bet'], params['max_bet'])
+        else:
+            player_bet = sim.sim_bet(params['min_bet'], params['max_bet'])
+
+        if not player_bet:
+            # leave game
+            break
+
+        # TODO: set player bet
 
         # TODO: simulate bets for other players; query bet for user if gamelay mode
+        
 
-        # TODO: initial deal - 2 cards to each player and dealer
+        # initial deal - 2 cards to each player and dealer
+        pdb.set_trace()
+        sim.deal(MasterDeck, dealer_hand, players, 2)
+
+        pdb.set_trace()
+
 
         # TODO: loop through all players - simulate bets and query bet for user if gameplay mode
 
-
-
     # TODO: print summary
-
+    pdb.set_trace()
 
     # TODO: initialize player dict
+
+if __name__ == '__main__':
+    main(docopt(__doc__))
